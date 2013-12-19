@@ -29,13 +29,14 @@ io.sockets.on('connection', clientConnect)
 function clientConnect(socket) {
   numClients++
   checkSFWeatherAndUpdateClients()
+  checkBitCoinPriceAndUpdateClients()
 }
 
 // random messaging to the socket.io clients
 periodicallySendRandomNumberToClients()
 function periodicallySendRandomNumberToClients() {
-  var randomNumber = Math.floor(Math.random()*10+1)
-  io.sockets.emit('random-number', randomNumber)
+  var bitCoinPrice = Math.floor(Math.random()*10+1)
+  io.sockets.emit('bitcoin-price', bitCoinPrice)
 
   setTimeout(periodicallySendRandomNumberToClients, 1000)
 }
@@ -48,9 +49,15 @@ if (!process.env.WWO_API_KEY) {
 
 var lastTemperature, lastNumClients
 checkSFWeatherAndUpdateClients()
+checkBitCoinPriceAndUpdateClients()
 
 function checkSFWeatherAndUpdateClients() {
   var url = 'http://api.worldweatheronline.com/free/v1/weather.ashx?q=San%20Francisco%2C%20CA&format=JSON&extra=&num_of_days=&date=&fx=&cc=&includelocation=&show_comments=&key=' + process.env.WWO_API_KEY
+
+  // var url = 'http://api.worldweatheronline.com/
+  // free/v1/weather.ashx?q=San%20Francisco%2C%20CA&format=
+  // JSON&extra=&num_of_days=&date=&fx=&cc=&includelocation=
+  // &show_comments=&key=' + process.env.WWO_API_KEY
 
   request(url, function(error, response, body) {
     updateClientsAndScheduleNextCheck(JSON.parse(body))
@@ -58,7 +65,7 @@ function checkSFWeatherAndUpdateClients() {
 }
 
 function updateClientsAndScheduleNextCheck(weatherData) {
-  console.log(weatherData.data)
+  // console.log(weatherData.data)
   var currentTemperature = parseInt(weatherData.data.current_condition[0].temp_F)
   // if the temperature has changed or new clients have connected, notify them
   if ((currentTemperature != lastTemperature) || (lastNumClients < numClients)) {
@@ -73,4 +80,24 @@ function updateClientsAndScheduleNextCheck(weatherData) {
   }
 
   setTimeout(checkSFWeatherAndUpdateClients, 60000)
+}
+
+function checkBitCoinPriceAndUpdateClients() {
+  // This is curl request returns BTC prices but no dates/times
+  // var url = 'curl https://data.mtgox.com/api/1/BTCUSD/ticker'
+  // Here is the API reference
+  // https://en.bitcoin.it/wiki/MtGox/API/Streaming
+
+  var url = 'https://socketio.mtgox.com/mtgox'
+  request(url, function(error, response, body) {
+    console.log("mtgox connection error:")
+    console.log(error)
+    console.log(body)
+    // updateBitCoinClientsAndScheduleNextCheck(body)
+  })
+}
+
+function updateBitCoinClientsAndScheduleNextCheck(mtgoxData) {
+  console.log("here")
+  console.log(mtgoxData.data)
 }
